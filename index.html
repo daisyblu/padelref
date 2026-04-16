@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PadelRef — Ask the Rules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --court-green: #1a5c3a;
+    --court-green-mid: #2d8a5a;
+    --court-green-light: #4ab87c;
+    --sand: #f5f0e8;
+    --sand-dark: #e8e0d0;
+    --ink: #0f1a14;
+    --ink-mid: #2c3d30;
+    --chalk: #ffffff;
+    --accent: #e8c84a;
+    --accent-warm: #d4a832;
+    --fault-red: #c0392b;
+    --glass-blue: #3498db;
+    --muted: #7a8c7e;
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--ink);
+    color: var(--chalk);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── COURT BACKGROUND ─── */
+  .court-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .court-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(26,92,58,0.4) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 80% 80%, rgba(45,138,90,0.15) 0%, transparent 60%),
+      linear-gradient(180deg, #0f1a14 0%, #111e16 50%, #0c1710 100%);
+  }
+
+  .court-lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+  }
+
+  /* ─── LAYOUT ─── */
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--court-green-mid);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--chalk);
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .nav-tabs {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .nav-tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 7px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .nav-tab.active {
+    background: var(--court-green-mid);
+    color: var(--chalk);
+  }
+
+  .nav-tab:hover:not(.active) { color: var(--chalk); }
+
+  /* ─── MAIN CONTENT ─── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem 2rem;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* ─── VIEW SWITCHING ─── */
+  .view { display: none; width: 100%; }
+  .view.active { display: flex; flex-direction: column; align-items: center; }
+
+  /* ─── ASK VIEW ─── */
+  .ask-hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .ask-hero h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+    color: var(--chalk);
+  }
+
+  .ask-hero h1 em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .ask-hero p {
+    font-size: 15px;
+    color: var(--muted);
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    letter-spacing: 0.01em;
+  }
+
+  /* ─── MIC BUTTON ─── */
+  .mic-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s 0.15s ease both;
+  }
+
+  .mic-ring-outer {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mic-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--court-green-mid);
+    opacity: 0;
+    animation: none;
+  }
+
+  .mic-pulse.listening {
+    animation: pulse-ring 1.8s ease-out infinite;
+  }
+
+  .mic-pulse-2 {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    border: 1px solid rgba(74,184,124,0.3);
+    opacity: 0;
+  }
+
+  .mic-pulse-2.listening {
+    animation: pulse-ring 1.8s 0.5s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.92); opacity: 0.8; }
+    100% { transform: scale(1.18); opacity: 0; }
+  }
+
+  .mic-btn {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: var(--court-green);
+    border: 2px solid var(--court-green-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mic-btn:hover {
+    background: var(--court-green-mid);
+    transform: scale(1.04);
+  }
+
+  .mic-btn.listening {
+    background: var(--fault-red);
+    border-color: #e74c3c;
+  }
+
+  .mic-btn.responding {
+    background: var(--ink-mid);
+    border-color: var(--accent);
+    animation: responding-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes responding-pulse {
+    0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(232,200,74,0.3); }
+    50% { border-color: var(--accent-warm); box-shadow: 0 0 0 8px rgba(232,200,74,0); }
+  }
+
+  .mic-icon { pointer-events: none; }
+
+  .mic-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mic-label.listening { color: var(--fault-red); }
+  .mic-label.responding { color: var(--accent); }
+
+  /* ─── TEXT INPUT ─── */
+  .text-input-area {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    animation: fadeUp 0.6s 0.2s ease both;
+    margin-bottom: 2rem;
+  }
+
+  .text-input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    color: var(--chalk);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .text-input::placeholder { color: var(--muted); }
+  .text-input:focus { border-color: var(--court-green-mid); }
+
+  .send-btn {
+    background: var(--court-green-mid);
+    border: none;
+    border-radius: var(--radius);
+    padding: 0 20px;
+    cursor: pointer;
+    color: var(--chalk);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .send-btn:hover { background: var(--court-green-light); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── CONVERSATION ─── */
+  .conversation {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .message {
+    width: 100%;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message-user {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .message-user .bubble {
+    background: var(--court-green);
+    border: 1px solid var(--court-green-mid);
+    border-radius: var(--radius) var(--radius) 4px var(--radius);
+    padding: 12px 16px;
+    max-width: 80%;
+    font-size: 15px;
+    line-height: 1.5;
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+  }
+
+  .message-agent {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .agent-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--court-green-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .message-agent .bubble {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px var(--radius) var(--radius) var(--radius);
+    padding: 14px 18px;
+    max-width: 85%;
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .rule-ref {
+    display: inline-block;
+    margin-top: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(232,200,74,0.1);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(232,200,74,0.25);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 5px;
+    padding: 6px 4px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: typing-bounce 1.2s infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* ─── SUGGESTIONS ─── */
+  .suggestions {
+    width: 100%;
+    margin-top: 1.5rem;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .suggestions-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .suggestion-chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    line-height: 1.4;
+  }
+
+  .suggestion-chip:hover {
+    border-color: var(--court-green-mid);
+    color: var(--chalk);
+    background: rgba(45,138,90,0.12);
+  }
+
+  /* ─── SPEECH TRANSCRIPT ─── */
+  .speech-transcript {
+    font-size: 14px;
+    color: var(--muted);
+    font-style: italic;
+    font-family: 'Crimson Pro', serif;
+    min-height: 20px;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  .speech-transcript.active { color: var(--chalk); }
+
+  /* ─── GAME VIEW ─── */
+  .game-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .score-display {
+    text-align: center;
+  }
+
+  .score-num {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .streak-display {
+    text-align: center;
+  }
+
+  .streak-fire {
+    font-size: 24px;
+    line-height: 1;
+    filter: saturate(1.5);
+  }
+
+  .streak-num {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .streak-num.hot { color: #ff6b35; }
+
+  .progress-bar-wrap {
+    flex: 1;
+    margin: 0 1.5rem;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--court-green-mid), var(--court-green-light));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  /* ─── TIMER ─── */
+  .timer-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .timer-fill {
+    height: 100%;
+    background: var(--court-green-light);
+    border-radius: 2px;
+    transition: width 0.1s linear, background 0.5s;
+  }
+
+  .timer-fill.warning { background: var(--accent); }
+  .timer-fill.danger { background: var(--fault-red); }
+
+  /* ─── QUESTION CARD ─── */
+  .question-card {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .question-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .question-text {
+    font-family: 'Crimson Pro', serif;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    line-height: 1.5;
+    color: var(--chalk);
+  }
+
+  /* ─── ANSWER OPTIONS ─── */
+  .answers-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s 0.1s ease both;
+  }
+
+  .answer-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--court-green-mid);
+    background: rgba(45,138,90,0.12);
+  }
+
+  .answer-btn:disabled { cursor: not-allowed; }
+
+  .answer-btn.correct {
+    border-color: var(--court-green-light);
+    background: rgba(74,184,124,0.15);
+  }
+
+  .answer-btn.wrong {
+    border-color: var(--fault-red);
+    background: rgba(192,57,43,0.15);
+    opacity: 0.6;
+  }
+
+  .answer-letter {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .answer-btn.correct .answer-letter { background: rgba(74,184,124,0.3); color: var(--court-green-light); }
+  .answer-btn.wrong .answer-letter { background: rgba(192,57,43,0.3); color: var(--fault-red); }
+
+  .answer-text {
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* ─── EXPLANATION ─── */
+  .explanation-box {
+    width: 100%;
+    background: rgba(232,200,74,0.06);
+    border: 1px solid rgba(232,200,74,0.2);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.35s ease both;
+    display: none;
+  }
+
+  .explanation-box.visible { display: block; }
+
+  .explanation-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .explanation-text {
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .next-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--court-green-mid);
+    color: var(--chalk);
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: background 0.2s;
+    align-self: flex-end;
+    display: none;
+  }
+
+  .next-btn.visible { display: block; }
+  .next-btn:hover { background: var(--court-green-light); }
+
+  /* ─── START SCREEN ─── */
+  .game-start {
+    width: 100%;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .game-start h2 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 2.5rem;
+    font-weight: 300;
+    font-style: italic;
+    margin-bottom: 0.75rem;
+  }
+
+  .game-start h2 em { color: var(--accent); font-style: normal; }
+
+  .game-start p {
+    font-size: 15px;
+    color: var(--muted);
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    margin-bottom: 2.5rem;
+  }
+
+  .difficulty-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .diff-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 1.25rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .diff-btn:hover { border-color: var(--court-green-mid); background: rgba(45,138,90,0.1); }
+  .diff-btn.selected { border-color: var(--court-green-light); background: rgba(45,138,90,0.18); }
+
+  .diff-icon { font-size: 26px; margin-bottom: 8px; }
+
+  .diff-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--chalk);
+    margin-bottom: 4px;
+  }
+
+  .diff-desc {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .start-game-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--court-green-mid);
+    color: var(--chalk);
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px 48px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .start-game-btn:hover {
+    background: var(--court-green-light);
+    transform: translateY(-1px);
+  }
+
+  /* ─── END SCREEN ─── */
+  .game-end {
+    width: 100%;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .final-score-ring {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(232,200,74,0.08);
+    border: 2px solid var(--accent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+
+  .final-score-num {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .final-score-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .game-end h2 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 2rem;
+    font-style: italic;
+    font-weight: 300;
+    margin-bottom: 0.5rem;
+  }
+
+  .game-end p {
+    font-size: 15px;
+    color: var(--muted);
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    margin-bottom: 2rem;
+  }
+
+  .end-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .end-stat {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+
+  .end-stat-num { font-size: 24px; font-weight: 800; color: var(--chalk); line-height: 1; }
+  .end-stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+  .play-again-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--court-green-mid);
+    color: var(--chalk);
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 40px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .play-again-btn:hover { background: var(--court-green-light); }
+
+  /* ─── SPEECH NOT SUPPORTED NOTICE ─── */
+  .no-speech-notice {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    text-align: center;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* ─── LOADING ─── */
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--chalk);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── FOOTER ─── */
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+  }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    .nav-tab { padding: 6px 12px; font-size: 12px; }
+    main { padding: 2rem 1rem; }
+    .answers-grid { grid-template-columns: 1fr; }
+    .difficulty-grid { grid-template-columns: 1fr; }
+    .end-stats { grid-template-columns: repeat(3, 1fr); }
+    .suggestions-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── API KEY SETUP ─── */
+  .api-setup {
+    width: 100%;
+    background: rgba(232,200,74,0.06);
+    border: 1px solid rgba(232,200,74,0.25);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .api-setup h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+  }
+
+  .api-setup p {
+    font-family: 'Crimson Pro', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .api-key-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .api-key-input {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    color: var(--chalk);
+    outline: none;
+  }
+
+  .api-key-input:focus { border-color: var(--accent); }
+
+  .api-save-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: var(--ink);
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+
+  .api-status {
+    font-size: 12px;
+    margin-top: 8px;
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+  }
+
+  .api-status.ok { color: var(--court-green-light); }
+  .api-status.err { color: var(--fault-red); }
+</style>
+</head>
+
+<body>
+<div class="court-bg">
+  <svg class="court-lines" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <rect x="100" y="50" width="800" height="500" fill="none" stroke="white" stroke-width="2"/>
+    <line x1="500" y1="50" x2="500" y2="550" stroke="white" stroke-width="1.5"/>
+    <line x1="100" y1="300" x2="900" y2="300" stroke="white" stroke-width="2"/>
+    <rect x="220" y="175" width="560" height="250" fill="none" stroke="white" stroke-width="1"/>
+    <line x1="500" y1="175" x2="500" y2="425" stroke="white" stroke-width="1"/>
+    <circle cx="500" cy="300" r="30" fill="none" stroke="white" stroke-width="1"/>
+  </svg>
+</div>
+
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.5"/>
+          <path d="M5 9h8M9 5v8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">Padel<span>Ref</span></span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-view="ask" onclick="switchView('ask')">Ask the Ref</button>
+      <button class="nav-tab" data-view="game" onclick="switchView('game')">Rules Challenge</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ═══════════════ ASK VIEW ═══════════════ -->
+    <div class="view active" id="view-ask">
+
+      <div id="api-setup-panel" class="api-setup">
+        <h3>Setup — Anthropic API Key</h3>
+        <p>Enter your Anthropic API key to power the rules agent. Your key is stored only in this browser session and never sent anywhere except directly to Anthropic.</p>
+        <div class="api-key-row">
+          <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." />
+          <button class="api-save-btn" onclick="saveApiKey()">Save</button>
+        </div>
+        <div class="api-status" id="api-status"></div>
+      </div>
+
+      <div class="ask-hero" id="ask-hero">
+        <h1>Ask anything about<br><em>padel rules</em></h1>
+        <p>Tap the mic or type your question below</p>
+      </div>
+
+      <div class="mic-area">
+        <div class="mic-ring-outer">
+          <div class="mic-pulse" id="mic-pulse"></div>
+          <div class="mic-pulse-2" id="mic-pulse-2"></div>
+          <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Tap to speak">
+            <svg class="mic-icon" width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <rect x="12" y="4" width="12" height="18" rx="6" fill="white"/>
+              <path d="M6 18c0 6.627 5.373 12 12 12s12-5.373 12-12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <line x1="18" y1="30" x2="18" y2="34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="12" y1="34" x2="24" y2="34" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="mic-label" id="mic-label">Tap to speak</div>
+        <div class="speech-transcript" id="speech-transcript"></div>
+      </div>
+
+      <div class="text-input-area">
+        <input type="text" class="text-input" id="text-input" placeholder="Or type your padel rule question…" onkeydown="handleTextKey(event)"/>
+        <button class="send-btn" id="send-btn" onclick="sendTextQuestion()">Ask →</button>
+      </div>
+
+      <div class="conversation" id="conversation"></div>
+
+      <div class="suggestions" id="suggestions-panel">
+        <div class="suggestions-label">Try asking</div>
+        <div class="suggestions-grid" id="suggestions-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ GAME VIEW ═══════════════ -->
+    <div class="view" id="view-game">
+
+      <!-- Start Screen -->
+      <div id="game-start-screen" class="game-start">
+        <h2>Rules <em>Challenge</em></h2>
+        <p>10 questions. Real scenarios. Learn the rules by playing.</p>
+        <div class="difficulty-grid">
+          <button class="diff-btn selected" data-diff="beginner" onclick="selectDiff(this)">
+            <div class="diff-icon">🎾</div>
+            <div class="diff-name">Beginner</div>
+            <div class="diff-desc">Basic scoring & service</div>
+          </button>
+          <button class="diff-btn" data-diff="club" onclick="selectDiff(this)">
+            <div class="diff-icon">⚡</div>
+            <div class="diff-name">Club Player</div>
+            <div class="diff-desc">Wall play & lets</div>
+          </button>
+          <button class="diff-btn" data-diff="expert" onclick="selectDiff(this)">
+            <div class="diff-icon">🏆</div>
+            <div class="diff-name">Expert</div>
+            <div class="diff-desc">Full FIP rulebook</div>
+          </button>
+        </div>
+        <button class="start-game-btn" onclick="startGame()">Start Game →</button>
+      </div>
+
+      <!-- Active Game Screen -->
+      <div id="game-active-screen" style="width:100%; display:none; flex-direction:column; align-items:center;">
+
+        <div class="game-header">
+          <div class="score-display">
+            <div class="score-num" id="game-score">0</div>
+            <div class="score-label">Score</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-label">
+              <span>Progress</span>
+              <span id="q-progress">1 / 10</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+            </div>
+          </div>
+          <div class="streak-display">
+            <div class="streak-fire" id="streak-fire">🔥</div>
+            <div class="streak-num" id="streak-num">×1</div>
+          </div>
+        </div>
+
+        <div class="timer-bar">
+          <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+        </div>
+
+        <div class="question-card" id="question-card">
+          <div class="question-tag" id="q-tag">Service</div>
+          <div class="question-text" id="q-text">Loading question…</div>
+        </div>
+
+        <div class="answers-grid" id="answers-grid"></div>
+
+        <div class="explanation-box" id="explanation-box">
+          <div class="explanation-heading">Ruling</div>
+          <div class="explanation-text" id="explanation-text"></div>
+        </div>
+
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question →</button>
+
+      </div>
+
+      <!-- End Screen -->
+      <div id="game-end-screen" class="game-end" style="display:none;">
+        <div class="final-score-ring">
+          <div class="final-score-num" id="final-score">0</div>
+          <div class="final-score-label">Points</div>
+        </div>
+        <h2 id="end-title">Well played!</h2>
+        <p id="end-subtitle">You really know your padel rules.</p>
+        <div class="end-stats">
+          <div class="end-stat">
+            <div class="end-stat-num" id="end-correct">0</div>
+            <div class="end-stat-label">Correct</div>
+          </div>
+          <div class="end-stat">
+            <div class="end-stat-num" id="end-streak">0</div>
+            <div class="end-stat-label">Best streak</div>
+          </div>
+          <div class="end-stat">
+            <div class="end-stat-num" id="end-accuracy">0%</div>
+            <div class="end-stat-label">Accuracy</div>
+          </div>
+        </div>
+        <button class="play-again-btn" onclick="resetGame()">Play Again →</button>
+      </div>
+
+    </div><!-- end view-game -->
+  </main>
+
+  <footer>PadelRef MVP · Rules based on FIP 2024</footer>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let apiKey = sessionStorage.getItem('padelref_key') || '';
+let isListening = false;
+let isResponding = false;
+let recognition = null;
+let speechSupported = false;
+
+// ════════════════════════════════════════════════
+// API KEY SETUP
+// ════════════════════════════════════════════════
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    showApiStatus('Key should start with sk-ant-', false);
+    return;
+  }
+  apiKey = val;
+  sessionStorage.setItem('padelref_key', apiKey);
+  showApiStatus('✓ Key saved for this session', true);
+  document.getElementById('api-setup-panel').style.display = 'none';
+}
+
+function showApiStatus(msg, ok) {
+  const el = document.getElementById('api-status');
+  el.textContent = msg;
+  el.className = 'api-status ' + (ok ? 'ok' : 'err');
+}
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === name);
+  });
+  document.getElementById('view-' + name).classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+// SPEECH RECOGNITION SETUP
+// ════════════════════════════════════════════════
+(function setupSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    speechSupported = false;
+    const notice = document.createElement('div');
+    notice.className = 'no-speech-notice';
+    notice.textContent = 'Voice input not supported in this browser — use text input below.';
+    document.querySelector('.mic-area').after(notice);
+    document.getElementById('mic-btn').style.opacity = '0.4';
+    document.getElementById('mic-btn').style.pointerEvents = 'none';
+    return;
+  }
+  speechSupported = true;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    const el = document.getElementById('speech-transcript');
+    el.textContent = transcript;
+    el.classList.add('active');
+    if (e.results[e.results.length - 1].isFinal) {
+      stopListening();
+      askQuestion(transcript);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    stopListening();
+    if (e.error !== 'no-speech') {
+      addMessage('agent', 'Sorry, I had trouble hearing that. Please try again or use the text input.');
+    }
+  };
+
+  recognition.onend = () => { if (isListening) stopListening(); };
+})();
+
+function toggleMic() {
+  if (!speechSupported) return;
+  if (isListening) { stopListening(); return; }
+  startListening();
+}
+
+function startListening() {
+  isListening = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  document.getElementById('mic-label').textContent = 'Listening — tap to stop';
+  document.getElementById('mic-label').classList.add('listening');
+  document.getElementById('mic-pulse').classList.add('listening');
+  document.getElementById('mic-pulse-2').classList.add('listening');
+  document.getElementById('speech-transcript').textContent = '';
+  document.getElementById('suggestions-panel').style.display = 'none';
+  recognition.start();
+}
+
+function stopListening() {
+  isListening = false;
+  document.getElementById('mic-btn').classList.remove('listening');
+  document.getElementById('mic-label').textContent = 'Tap to speak';
+  document.getElementById('mic-label').classList.remove('listening');
+  document.getElementById('mic-pulse').classList.remove('listening');
+  document.getElementById('mic-pulse-2').classList.remove('listening');
+  try { recognition.stop(); } catch(e) {}
+}
+
+// ════════════════════════════════════════════════
+// VOICE SYNTHESIS
+// ════════════════════════════════════════════════
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.95;
+  utt.pitch = 1.0;
+  // Try to pick a natural voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Daniel') || v.name.includes('Samantha') || v.name.includes('Karen'));
+  if (preferred) utt.voice = preferred;
+  window.speechSynthesis.speak(utt);
+}
+
+// ════════════════════════════════════════════════
+// TEXT INPUT
+// ════════════════════════════════════════════════
+function handleTextKey(e) {
+  if (e.key === 'Enter') sendTextQuestion();
+}
+
+function sendTextQuestion() {
+  const input = document.getElementById('text-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  askQuestion(q);
+}
+
+// ════════════════════════════════════════════════
+// ASK QUESTION — calls Claude API
+// ════════════════════════════════════════════════
+const SYSTEM_PROMPT = `You are PadelRef, an expert padel rules referee. You answer questions about padel rules with precision and clarity, based on the official FIP (Federación Internacional de Pádel) rulebook.
+
+Rules you know well include: service rules (diagonal service, bounce in the service box, net faults, foot faults), scoring (advantage, golden point, tie-breaks), wall play (when the ball can be played off the walls and glass, out-of-court balls, double bounce rules), lets and replays, equipment rules, court dimensions, and player conduct.
+
+When answering:
+1. Give a clear, direct answer in 2-4 sentences.
+2. If relevant, mention the specific FIP rule number at the end in the format: [FIP Rule X.X]
+3. Be authoritative but friendly — like a good club referee explaining a ruling.
+4. If a question is outside padel rules (e.g. fitness, racket brands, tournament formats), politely say that's outside your expertise as a rules referee.
+5. Keep answers concise — this is used on-court, not in a law library.
+
+Examples of topics you cover: service faults, let situations, when a ball is out after hitting the glass, golden point rule, the net post rule, balls hitting opponents, player equipment malfunctions.`;
+
+async function askQuestion(question) {
+  if (!apiKey) {
+    addMessage('agent', 'Please enter your Anthropic API key in the setup panel above to use the rules agent.');
+    document.getElementById('api-setup-panel').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('suggestions-panel').style.display = 'none';
+  document.getElementById('speech-transcript').textContent = '';
+
+  // Show user message
+  addMessage('user', question);
+
+  // Show typing indicator
+  const typingId = addTypingIndicator();
+
+  // Set responding state
+  isResponding = true;
+  document.getElementById('mic-btn').classList.add('responding');
+  document.getElementById('mic-label').classList.add('responding');
+  document.getElementById('mic-label').textContent = 'Thinking…';
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: question }]
+      })
+    });
+
+    removeTypingIndicator(typingId);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const answer = data.content[0]?.text || 'Sorry, I could not generate an answer.';
+
+    addMessage('agent', answer);
+    speak(answer);
+
+  } catch (err) {
+    removeTypingIndicator(typingId);
+    const errMsg = err.message.includes('401') 
+      ? 'Invalid API key. Please check your Anthropic API key and try again.'
+      : `Connection error: ${err.message}`;
+    addMessage('agent', errMsg);
+  } finally {
+    isResponding = false;
+    document.getElementById('mic-btn').classList.remove('responding');
+    document.getElementById('mic-label').classList.remove('responding');
+    document.getElementById('mic-label').textContent = 'Tap to speak';
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+function addMessage(role, text) {
+  const conv = document.getElementById('conversation');
+
+  if (role === 'user') {
+    const div = document.createElement('div');
+    div.className = 'message message-user';
+    div.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+    conv.appendChild(div);
+  } else {
+    // Extract rule reference if present
+    const ruleMatch = text.match(/\[FIP Rule ([^\]]+)\]/);
+    const cleanText = text.replace(/\[FIP Rule [^\]]+\]/, '').trim();
+    const ruleTag = ruleMatch ? `<div><span class="rule-ref">FIP Rule ${ruleMatch[1]}</span></div>` : '';
+
+    const div = document.createElement('div');
+    div.className = 'message message-agent';
+    div.innerHTML = `
+      <div class="agent-avatar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="white" stroke-width="1.2"/>
+          <path d="M4 8h8M8 4v8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="bubble">${escapeHtml(cleanText)}${ruleTag}</div>`;
+    conv.appendChild(div);
+  }
+
+  conv.scrollTop = conv.scrollHeight;
+}
+
+let typingCounter = 0;
+function addTypingIndicator() {
+  const id = 'typing-' + (++typingCounter);
+  const conv = document.getElementById('conversation');
+  const div = document.createElement('div');
+  div.className = 'message message-agent';
+  div.id = id;
+  div.innerHTML = `
+    <div class="agent-avatar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke="white" stroke-width="1.2"/>
+        <path d="M4 8h8M8 4v8" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="bubble"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ════════════════════════════════════════════════
+// SUGGESTIONS
+// ════════════════════════════════════════════════
+const SUGGESTIONS = [
+  "Can the ball bounce off the glass twice?",
+  "What is the golden point rule?",
+  "When is a service a fault?",
+  "Can I hit the ball after it hits the net post?",
+  "What happens if the ball hits my opponent?",
+  "Is it a let if the ball hits the top of the net?",
+  "How many bounces are allowed in padel?",
+  "What is the correct service sequence?",
+];
+
+(function renderSuggestions() {
+  const grid = document.getElementById('suggestions-grid');
+  SUGGESTIONS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'suggestion-chip';
+    btn.textContent = s;
+    btn.onclick = () => {
+      document.getElementById('suggestions-panel').style.display = 'none';
+      askQuestion(s);
+    };
+    grid.appendChild(btn);
+  });
+})();
+
+// Hide suggestions when there are messages
+const convObserver = new MutationObserver(() => {
+  const conv = document.getElementById('conversation');
+  if (conv.children.length > 0) {
+    document.getElementById('suggestions-panel').style.display = 'none';
+  }
+});
+convObserver.observe(document.getElementById('conversation'), { childList: true });
+
+// Show API setup if no key yet
+if (apiKey) document.getElementById('api-setup-panel').style.display = 'none';
+
+// ════════════════════════════════════════════════
+// GAME DATA
+// ════════════════════════════════════════════════
+const QUESTIONS = {
+  beginner: [
+    { tag: 'Scoring', q: 'In padel, what is the score called when both sides are at 40-40?', answers: ['Deuce', 'Tie', 'Break', 'Gold point'], correct: 0, explanation: 'When both players reach 40-40, it is called Deuce. The next point wins Advantage, and the point after that wins the game. [FIP Rule 26.1]' },
+    { tag: 'Service', q: 'From which zone must the server hit the ball during a padel service?', answers: ['Behind the service line, within their half', 'Anywhere on their side', 'From the net', 'From behind the baseline'], correct: 0, explanation: 'The server must stand behind the service line within the half of the court. The ball must be hit at or below waist height. [FIP Rule 14.1]' },
+    { tag: 'Scoring', q: 'How many sets are played in a standard padel match?', answers: ['Best of 3 sets', 'Best of 5 sets', '1 set only', '2 sets with super tiebreak'], correct: 0, explanation: 'A standard padel match is the best of three sets. The third set uses a super tiebreak (first to 10 points) in most competitions. [FIP Rule 25]' },
+    { tag: 'Service', q: 'In the service, where must the ball land first?', answers: ['In the diagonally opposite service box', 'Anywhere in the opponent\'s half', 'After bouncing off the back glass', 'In the net'], correct: 0, explanation: 'The served ball must bounce in the diagonally opposite service box before any walls. If it misses the box, it is a fault. [FIP Rule 14.3]' },
+    { tag: 'Bouncing', q: 'How many times can the ball bounce on the ground before a player must hit it?', answers: ['Only once', 'Twice', 'Three times', 'No limit'], correct: 0, explanation: 'The ball may only bounce once on the ground. If it bounces a second time, the point is lost — just like in tennis. [FIP Rule 17]' },
+    { tag: 'Scoring', q: 'What is the tiebreak score threshold in a standard set?', answers: ['6-6', '5-5', '7-7', '4-4'], correct: 0, explanation: 'A tiebreak is played when the score reaches 6-6 in a set. The first player to reach 7 points with a 2-point lead wins the tiebreak. [FIP Rule 27]' },
+    { tag: 'Service', q: 'How many service attempts does a player get per point?', answers: ['Two', 'One', 'Three', 'Unlimited'], correct: 0, explanation: 'Each player gets two service attempts (first serve and second serve) per point, the same as tennis. [FIP Rule 14.5]' },
+    { tag: 'Court', q: 'What are the outer walls of a padel court typically made of?', answers: ['Glass and metallic mesh', 'Concrete and wood', 'Plastic and rubber', 'Glass only'], correct: 0, explanation: 'Padel courts use a combination of glass (usually at the back and sides) and metallic mesh (at the sides). The different surfaces create varied ball rebounds. [FIP Court Regulations]' },
+    { tag: 'Wall play', q: 'After the ball bounces on your side, can you play it off the glass walls?', answers: ['Yes, the ball remains in play', 'No, glass ends the rally', 'Only off the back glass', 'Only if it is above head height'], correct: 0, explanation: 'After the ball bounces once on the ground, it can be played off the glass or metal mesh walls. This is what makes padel unique from tennis. [FIP Rule 18]' },
+    { tag: 'Net', q: 'If the ball clips the top of the net and lands in the correct service box, what happens?', answers: ['A let — the serve is replayed', 'The serve is a fault', 'The point continues', 'The server wins the point'], correct: 0, explanation: 'If a served ball touches the net and lands in the correct service box, it is a let and the serve is replayed — exactly as in tennis. [FIP Rule 15.2]' },
+  ],
+  club: [
+    { tag: 'Wall play', q: 'The ball bounces on your side and then goes over the fence into the stands. What happens?', answers: ['Your opponent wins the point', 'You win the point', 'Let — replay the point', 'Play continues outside'], correct: 0, explanation: 'If the ball bounces in the court and then exits over the fence or walls, the opponent wins the point as the ball is no longer playable. [FIP Rule 18.4]' },
+    { tag: 'Wall play', q: 'Can the ball bounce off the back glass and then off a side wall before you hit it?', answers: ['Yes, multiple walls are allowed', 'No, only one wall', 'Only the back glass counts', 'Only metal mesh counts'], correct: 0, explanation: 'After bouncing once on the ground, the ball can ricochet off multiple walls — back glass, side glass, mesh — before being struck. [FIP Rule 18.1]' },
+    { tag: 'Golden point', q: 'When is the golden point rule applied?', answers: ['At deuce (40-40)', 'When serving at 30-40', 'At 6-6 in the tiebreak', 'Only in the final set'], correct: 0, explanation: 'The golden point (sudden death) is applied at deuce in most professional and many amateur competitions, replacing the traditional advantage system. [FIP Official Competition Regulations]' },
+    { tag: 'Out of court', q: 'A player steps outside the court to retrieve a ball. Are they allowed to do this?', answers: ['Yes, if the door is open or they exit', 'No, they must stay inside', 'Only in doubles', 'Only if the ball is below knee height'], correct: 0, explanation: 'Players are allowed to exit the court through the gate or go over/around the court to play a ball that has exited, as long as it has not bounced twice. [FIP Rule 19]' },
+    { tag: 'Lets', q: 'During a rally, a ball from an adjacent court rolls onto your court. What is called?', answers: ['Let — the point is replayed', 'Play on — ignore it', 'The point is awarded to the player who last hit', 'Fault'], correct: 0, explanation: 'If a ball from another court enters and interferes with play, a let is called and the point is replayed. Safety and fair play take priority. [FIP Rule 22]' },
+    { tag: 'Service', q: 'The server bounces the ball and hits it, but the ball hits the post before entering the service box. What is it?', answers: ['A fault', 'A let', 'A good serve', 'The point is replayed'], correct: 0, explanation: 'If the serve hits the net post, it is a fault regardless of where the ball lands afterward. [FIP Rule 14.4]' },
+    { tag: 'Wall play', q: 'Your shot hits the back glass without bouncing on the ground first. What happens?', answers: ['The opponent wins the point', 'You win the point', 'It\'s a let', 'Play continues as normal'], correct: 0, explanation: 'A ball that hits the glass or walls on the opponent\'s side without first bouncing on the ground is out. The ground bounce must come first. [FIP Rule 18.3]' },
+    { tag: 'Doubles', q: 'In doubles, can both partners serve in a set?', answers: ['Yes, service alternates between partners each game', 'No, only one partner serves the whole set', 'The stronger player always serves', 'Partners can choose each game'], correct: 0, explanation: 'In doubles, service alternates between the two players of the same team — each player serves alternate games within the set. [FIP Rule 13.2]' },
+    { tag: 'Net', q: 'During a rally, your racket touches the net while the ball is still in play. What happens?', answers: ['You lose the point', 'Play continues', 'It\'s a let', 'Your partner can continue'], correct: 0, explanation: 'Touching the net, net post, or any part of the net structure with your racket or body during a rally results in losing the point immediately. [FIP Rule 20.1]' },
+    { tag: 'Service', q: 'The server\'s foot crosses the service line before striking the ball. What is called?', answers: ['A foot fault — service is a fault', 'Play on — no penalty', 'A let', 'The server loses the game'], correct: 0, explanation: 'Crossing the service line before striking the ball is a foot fault, which counts as a fault serve. The server is penalised but does not lose the point on the first serve. [FIP Rule 14.2]' },
+  ],
+  expert: [
+    { tag: 'Advanced', q: 'Can you hit the ball back to your own side of the court if it has not yet bounced?', answers: ['No — the ball must cross the net', 'Yes — in certain wall situations', 'Only in doubles', 'Only if it ricochets off your partner'], correct: 0, explanation: 'The ball must always pass over or around the net and land on the opponent\'s side. A ball returning to your own side without crossing the net is not a valid shot. [FIP Rule 17.3]' },
+    { tag: 'Player conduct', q: 'A player breaks their racket during a point due to a wall impact. What happens?', answers: ['Play stops — the player gets a new racket between points', 'The player loses the point', 'Play continues until the rally ends', 'Automatic let'], correct: 2, explanation: 'If equipment failure (such as a broken racket) occurs during a rally, play continues to its natural conclusion. The player may replace equipment only between points. [FIP Rule 21]' },
+    { tag: 'Advanced wall', q: 'The ball bounces in your court, then hits the glass, then bounces again on the ground before you reach it. Can you still play it?', answers: ['No — once it bounces twice you lose the point', 'Yes — wall contact resets the bounce count', 'Only if the second bounce is outside the service box', 'Only in a rally, not on service return'], correct: 0, explanation: 'A second bounce on the ground always ends the point, regardless of wall contact between the two bounces. [FIP Rule 17.1]' },
+    { tag: 'Tournament', q: 'What is the correct format for a third set in official FIP tournaments?', answers: ['Super tiebreak to 10, win by 2', 'Full set to 6 games', 'Tiebreak to 7', 'Golden game'], correct: 0, explanation: 'In official FIP competitions, the deciding third set uses a super tiebreak — first to 10 points with a minimum 2-point lead. [FIP Competition Regulations Art. 44]' },
+    { tag: 'Interference', q: 'During the point, a player yells loudly to distract their opponent\'s shot. What is the ruling?', answers: ['Point penalty — opponent wins the point', 'Warning first, then point penalty', 'Let — replay the point', 'No penalty if it was not intentional'], correct: 1, explanation: 'Deliberate verbal distraction earns a first warning and then point penalties for repeat offences, under unsportsmanlike conduct rules. [FIP Rule 31]' },
+    { tag: 'Advanced', q: 'A player hits a smash that exits the court over the back fence. Opponent is unable to retrieve it. Who wins the point?', answers: ['The opponent wins — ball left the court', 'The smashing player wins — ball was unreachable', 'Let — ball was unplayable', 'The point must be replayed'], correct: 0, explanation: 'If the ball exits the court after a smash, the opponent wins the point. A ball must always land playable in court boundaries (or be playable via legal wall re-entry). [FIP Rule 18.4]' },
+    { tag: 'Service', q: 'The server throws the ball up for the serve, then catches it without hitting. What is the ruling?', answers: ['No penalty — may reattempt', 'Fault', 'Warning', 'Let'], correct: 0, explanation: 'Catching a thrown ball without striking it carries no penalty — the server may simply restart the service motion. [FIP Rule 14.6]' },
+    { tag: 'Doubles positions', q: 'In doubles, after the serve, must each pair occupy specific zones on court?', answers: ['No — players may move freely anywhere', 'Yes — server must stay near baseline', 'Receiver\'s partner must stay at net', 'Positions are fixed until the second bounce'], correct: 0, explanation: 'After the serve is struck, all four players may move freely anywhere on their respective sides of the court. Positional restrictions only apply during the service action itself. [FIP Rule 13.3]' },
+    { tag: 'Advanced net', q: 'The ball crosses the net, bounces on the opponent\'s side, and then the spin brings it back over the net without being touched. Who wins?', answers: ['The hitter wins — opponent cannot reach it', 'Opponent wins — ball returned to your side without touching', 'Let — unusual circumstance', 'Hitter wins only if opponent could not reach it'], correct: 0, explanation: 'If the ball crosses the net, bounces, and returns back over the net due to spin, the hitter wins the point — the opponent is allowed to reach over the net to play it. [FIP Rule 20.2]' },
+    { tag: 'Medical', q: 'A player is injured mid-rally. Can they call for medical stoppage?', answers: ['Only between points, not during a rally', 'At any time — safety takes priority', 'Only the referee can stop play', 'Only in the third set'], correct: 0, explanation: 'Medical stoppages may only be requested between points, not during a live rally, unless there is an obvious and serious injury requiring immediate attention. [FIP Rule 30]' },
+  ]
+};
+
+// ════════════════════════════════════════════════
+// GAME STATE
+// ════════════════════════════════════════════════
+let gameState = {
+  difficulty: 'beginner',
+  questions: [],
+  currentQ: 0,
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  correct: 0,
+  timerInterval: null,
+  timeLeft: 20,
+  answered: false
+};
+
+function selectDiff(btn) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  gameState.difficulty = btn.dataset.diff;
+}
+
+function startGame() {
+  const qs = [...QUESTIONS[gameState.difficulty]];
+  // Shuffle
+  for (let i = qs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [qs[i], qs[j]] = [qs[j], qs[i]];
+  }
+  gameState.questions = qs.slice(0, 10);
+  gameState.currentQ = 0;
+  gameState.score = 0;
+  gameState.streak = 0;
+  gameState.bestStreak = 0;
+  gameState.correct = 0;
+
+  document.getElementById('game-start-screen').style.display = 'none';
+  const active = document.getElementById('game-active-screen');
+  active.style.display = 'flex';
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = gameState.questions[gameState.currentQ];
+  const total = gameState.questions.length;
+  const idx = gameState.currentQ;
+
+  gameState.answered = false;
+
+  // Header
+  document.getElementById('game-score').textContent = gameState.score;
+  document.getElementById('q-progress').textContent = `${idx + 1} / ${total}`;
+  document.getElementById('progress-fill').style.width = `${((idx) / total) * 100}%`;
+  updateStreak();
+
+  // Question
+  document.getElementById('q-tag').textContent = q.tag;
+  document.getElementById('q-text').textContent = q.q;
+
+  // Answers
+  const grid = document.getElementById('answers-grid');
+  grid.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.answers.forEach((ans, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="answer-letter">${letters[i]}</span><span class="answer-text">${ans}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  // Hide explanation & next
+  document.getElementById('explanation-box').classList.remove('visible');
+  document.getElementById('next-btn').classList.remove('visible');
+
+  // Timer
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(gameState.timerInterval);
+  gameState.timeLeft = 20;
+  const fill = document.getElementById('timer-fill');
+  fill.style.width = '100%';
+  fill.className = 'timer-fill';
+
+  gameState.timerInterval = setInterval(() => {
+    gameState.timeLeft -= 0.1;
+    const pct = (gameState.timeLeft / 20) * 100;
+    fill.style.width = Math.max(0, pct) + '%';
+
+    if (pct < 30) fill.className = 'timer-fill danger';
+    else if (pct < 55) fill.className = 'timer-fill warning';
+
+    if (gameState.timeLeft <= 0) {
+      clearInterval(gameState.timerInterval);
+      if (!gameState.answered) timeOut();
+    }
+  }, 100);
+}
+
+function timeOut() {
+  gameState.answered = true;
+  gameState.streak = 0;
+  updateStreak();
+
+  // Mark correct answer
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === gameState.questions[gameState.currentQ].correct) b.classList.add('correct');
+  });
+
+  showExplanation("Time's up! " + gameState.questions[gameState.currentQ].explanation);
+}
+
+function selectAnswer(idx) {
+  if (gameState.answered) return;
+  gameState.answered = true;
+  clearInterval(gameState.timerInterval);
+
+  const q = gameState.questions[gameState.currentQ];
+  const btns = document.querySelectorAll('.answer-btn');
+  const isCorrect = idx === q.correct;
+
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct');
+    else if (i === idx && !isCorrect) b.classList.add('wrong');
+  });
+
+  if (isCorrect) {
+    // Speed bonus: more points for faster answers
+    const speedBonus = Math.floor((gameState.timeLeft / 20) * 50);
+    gameState.streak++;
+    gameState.correct++;
+    if (gameState.streak > gameState.bestStreak) gameState.bestStreak = gameState.streak;
+    const multiplier = gameState.streak >= 5 ? 2 : gameState.streak >= 3 ? 1.5 : 1;
+    const points = Math.floor((100 + speedBonus) * multiplier);
+    gameState.score += points;
+    document.getElementById('game-score').textContent = gameState.score;
+    updateStreak();
+    showExplanation('✓ Correct! ' + q.explanation);
+  } else {
+    gameState.streak = 0;
+    updateStreak();
+    showExplanation('✗ Not quite. ' + q.explanation);
+  }
+}
+
+function updateStreak() {
+  const num = document.getElementById('streak-num');
+  const fire = document.getElementById('streak-fire');
+  const s = gameState.streak;
+  num.textContent = s >= 5 ? '×2' : s >= 3 ? '×1.5' : '×1';
+  num.className = 'streak-num' + (s >= 3 ? ' hot' : '');
+  fire.style.opacity = s >= 3 ? '1' : '0.3';
+}
+
+function showExplanation(text) {
+  const box = document.getElementById('explanation-box');
+  const expText = document.getElementById('explanation-text');
+
+  // Strip rule references to clean text
+  const ruleMatch = text.match(/\[FIP Rule ([^\]]+)\]/);
+  const cleanText = text.replace(/\[FIP Rule [^\]]+\]/, '').trim();
+
+  let html = cleanText;
+  if (ruleMatch) html += ` <span class="rule-ref">FIP Rule ${ruleMatch[1]}</span>`;
+  expText.innerHTML = html;
+
+  box.classList.add('visible');
+  document.getElementById('next-btn').classList.add('visible');
+}
+
+function nextQuestion() {
+  gameState.currentQ++;
+  if (gameState.currentQ >= gameState.questions.length) {
+    endGame();
+  } else {
+    renderQuestion();
+  }
+}
+
+function endGame() {
+  document.getElementById('game-active-screen').style.display = 'none';
+  const end = document.getElementById('game-end-screen');
+  end.style.display = 'block';
+
+  document.getElementById('final-score').textContent = gameState.score;
+  document.getElementById('end-correct').textContent = gameState.correct;
+  document.getElementById('end-streak').textContent = gameState.bestStreak;
+  document.getElementById('end-accuracy').textContent = Math.round((gameState.correct / gameState.questions.length) * 100) + '%';
+
+  const accuracy = gameState.correct / gameState.questions.length;
+  let title, subtitle;
+  if (accuracy >= 0.9) { title = 'Outstanding!'; subtitle = 'You\'re a padel rules expert — the ref would approve.'; }
+  else if (accuracy >= 0.7) { title = 'Well played!'; subtitle = 'Solid knowledge. A few more sessions and you\'ll be unstoppable.'; }
+  else if (accuracy >= 0.5) { title = 'Good effort!'; subtitle = 'You know the basics — keep playing to sharpen your rules knowledge.'; }
+  else { title = 'Keep practising!'; subtitle = 'Padel rules take time. Try again to build up your knowledge.'; }
+
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-subtitle').textContent = subtitle;
+}
+
+function resetGame() {
+  document.getElementById('game-end-screen').style.display = 'none';
+  document.getElementById('game-start-screen').style.display = 'block';
+}
+
+// Load voices async (some browsers need this)
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+</script>
+</body>
+</html>
