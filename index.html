@@ -937,75 +937,6 @@
     .suggestions-grid { grid-template-columns: 1fr; }
   }
 
-  /* ─── API KEY SETUP ─── */
-  .api-setup {
-    width: 100%;
-    background: rgba(232,200,74,0.06);
-    border: 1px solid rgba(232,200,74,0.25);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    animation: fadeUp 0.4s ease both;
-  }
-
-  .api-setup h3 {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: var(--accent);
-  }
-
-  .api-setup p {
-    font-family: 'Crimson Pro', serif;
-    font-size: 15px;
-    font-style: italic;
-    color: var(--muted);
-    margin-bottom: 1rem;
-    line-height: 1.5;
-  }
-
-  .api-key-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .api-key-input {
-    flex: 1;
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    color: var(--chalk);
-    outline: none;
-  }
-
-  .api-key-input:focus { border-color: var(--accent); }
-
-  .api-save-btn {
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background: var(--accent);
-    color: var(--ink);
-    border: none;
-    border-radius: var(--radius);
-    padding: 10px 20px;
-    cursor: pointer;
-  }
-
-  .api-status {
-    font-size: 12px;
-    margin-top: 8px;
-    font-family: 'Crimson Pro', serif;
-    font-style: italic;
-  }
-
-  .api-status.ok { color: var(--court-green-light); }
-  .api-status.err { color: var(--fault-red); }
 </style>
 </head>
 
@@ -1042,16 +973,6 @@
 
     <!-- ═══════════════ ASK VIEW ═══════════════ -->
     <div class="view active" id="view-ask">
-
-      <div id="api-setup-panel" class="api-setup">
-        <h3>Setup — Anthropic API Key</h3>
-        <p>Enter your Anthropic API key to power the rules agent. Your key is stored only in this browser session and never sent anywhere except directly to Anthropic.</p>
-        <div class="api-key-row">
-          <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." />
-          <button class="api-save-btn" onclick="saveApiKey()">Save</button>
-        </div>
-        <div class="api-status" id="api-status"></div>
-      </div>
 
       <div class="ask-hero" id="ask-hero">
         <h1>Ask anything about<br><em>padel rules</em></h1>
@@ -1193,32 +1114,11 @@
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-let apiKey = sessionStorage.getItem('padelref_key') || '';
+const apiKey = 'YOUR_API_KEY_HERE';
 let isListening = false;
 let isResponding = false;
 let recognition = null;
 let speechSupported = false;
-
-// ════════════════════════════════════════════════
-// API KEY SETUP
-// ════════════════════════════════════════════════
-function saveApiKey() {
-  const val = document.getElementById('api-key-input').value.trim();
-  if (!val.startsWith('sk-ant-')) {
-    showApiStatus('Key should start with sk-ant-', false);
-    return;
-  }
-  apiKey = val;
-  sessionStorage.setItem('padelref_key', apiKey);
-  showApiStatus('✓ Key saved for this session', true);
-  document.getElementById('api-setup-panel').style.display = 'none';
-}
-
-function showApiStatus(msg, ok) {
-  const el = document.getElementById('api-status');
-  el.textContent = msg;
-  el.className = 'api-status ' + (ok ? 'ok' : 'err');
-}
 
 // ════════════════════════════════════════════════
 // NAVIGATION
@@ -1349,12 +1249,6 @@ When answering:
 Examples of topics you cover: service faults, let situations, when a ball is out after hitting the glass, golden point rule, the net post rule, balls hitting opponents, player equipment malfunctions.`;
 
 async function askQuestion(question) {
-  if (!apiKey) {
-    addMessage('agent', 'Please enter your Anthropic API key in the setup panel above to use the rules agent.');
-    document.getElementById('api-setup-panel').style.display = 'block';
-    return;
-  }
-
   document.getElementById('suggestions-panel').style.display = 'none';
   document.getElementById('speech-transcript').textContent = '';
 
@@ -1403,8 +1297,8 @@ async function askQuestion(question) {
 
   } catch (err) {
     removeTypingIndicator(typingId);
-    const errMsg = err.message.includes('401') 
-      ? 'Invalid API key. Please check your Anthropic API key and try again.'
+    const errMsg = err.message.includes('401')
+      ? 'Authentication error. Please check that a valid API key is configured.'
       : `Connection error: ${err.message}`;
     addMessage('agent', errMsg);
   } finally {
@@ -1511,9 +1405,6 @@ const convObserver = new MutationObserver(() => {
   }
 });
 convObserver.observe(document.getElementById('conversation'), { childList: true });
-
-// Show API setup if no key yet
-if (apiKey) document.getElementById('api-setup-panel').style.display = 'none';
 
 // ════════════════════════════════════════════════
 // GAME DATA
